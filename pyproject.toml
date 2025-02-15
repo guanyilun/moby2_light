@@ -1,0 +1,18 @@
+[build-system]
+requires = ["setuptools>=45"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "moby2"
+version = "0.1.0"
+description = "ACT Data Analysis Software Package"
+requires-python = ">=3.7"
+dependencies = [
+    "numpy>=1.20.0",  # For numpy.typing
+]
+
+[tool.setuptools]
+packages = ["moby2", "moby2.tod"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
