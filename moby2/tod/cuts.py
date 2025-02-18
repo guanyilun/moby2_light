@@ -141,7 +141,8 @@ def get_glitch_cuts(
         filt_vec=filt_vec,
         n_sig=glitch_params.n_sig,
         max_glitch=glitch_params.max_glitch,
-        min_separation=glitch_params.min_separation
+        min_separation=glitch_params.min_separation,
+        threads=threads
     )
     
     print("\nCreating cuts object...")
@@ -171,10 +172,11 @@ def detect_glitches_vectorized(
     max_glitch: int,
     min_separation: int,
     detrend: bool = True,
-    retrend: bool = False
+    retrend: bool = False,
+    threads: int = 1
 ) -> List["CutsVector"]:
     t0 = time.time()
-    data = data[dets].astype(np.complex64)
+    data = data[dets].copy()
     n_det, n_samp = data.shape
 
     print(f"\nDetrending data...")
@@ -191,8 +193,8 @@ def detect_glitches_vectorized(
         data -= trend
 
     # 2. Batched FFTW Setup
-    fft_obj = pyfftw.FFTW(data, data, axes=(1,), direction='FFTW_FORWARD', flags=('FFTW_ESTIMATE',), threads=4)
-    ifft_obj = pyfftw.FFTW(data, data, axes=(1,), direction='FFTW_BACKWARD', flags=('FFTW_ESTIMATE',), threads=4)
+    fft_obj = pyfftw.FFTW(data, data, axes=(1,), direction='FFTW_FORWARD', flags=('FFTW_ESTIMATE',), threads=threads)
+    ifft_obj = pyfftw.FFTW(data, data, axes=(1,), direction='FFTW_BACKWARD', flags=('FFTW_ESTIMATE',), threads=threads)
 
     print("\nPerforming FFT operations...")
     t_fft_start = time.time()
@@ -211,10 +213,9 @@ def detect_glitches_vectorized(
     print("\nCalculating thresholds...")
     t_thresh_start = time.time()
     # 4. Vectorized Thresholding with SciPy
-    abs_diff = np.abs(data)
-    iqr = stats.iqr(abs_diff, axis=1, scale='normal')  # Proper IQR calculation
-    thresh = (iqr * n_sig)[:, np.newaxis]
-    cut_mask = abs_diff > thresh
+    iqr = stats.iqr(data, axis=1, scale='normal')  # Proper IQR calculation
+    thresh = 0.741 * (iqr * n_sig)[:, np.newaxis]
+    cut_mask = np.abs(data) > thresh
     t_thresh = time.time()
     print(f"Thresholding took {t_thresh - t_thresh_start:.2f} seconds")
 
