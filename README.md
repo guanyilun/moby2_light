@@ -23,6 +23,6 @@ To install in development mode:
 
 ```bash
 git clone https://github.com/guanyilun/moby2_light.git
-cd moby2
+cd moby2_light
 pip install -e .
 ```
