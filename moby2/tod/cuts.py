@@ -2,7 +2,6 @@ import numpy as np
 from dataclasses import dataclass
 from typing import Optional, Dict, List, Any, Tuple
 import time
-import pyfftw  # Needed for FFT operations
 import numpy.typing as npt
 from scipy import stats
 from numba import jit, prange
@@ -173,7 +172,6 @@ def detect_glitches_vectorized(
     min_separation: int,
     detrend: bool = True,
     retrend: bool = False,
-    threads: int = 1
 ) -> List["CutsVector"]:
     t0 = time.time()
     data = data[dets].copy()
