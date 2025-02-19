@@ -192,17 +192,12 @@ def detect_glitches_vectorized(
         trend = x0 + trend_slope * (j_indices - win/2)
         data -= trend
 
-    # 2. Batched FFTW Setup
-    fft_obj = pyfftw.FFTW(data, data, axes=(1,), direction='FFTW_FORWARD', flags=('FFTW_ESTIMATE',), threads=threads)
-    ifft_obj = pyfftw.FFTW(data, data, axes=(1,), direction='FFTW_BACKWARD', flags=('FFTW_ESTIMATE',), threads=threads)
-
     print("\nPerforming FFT operations...")
     t_fft_start = time.time()
-    # 3. Batched FFT Operations
-    fft_obj.execute()
-    data *= filt_vec[np.newaxis, :]
-    ifft_obj.execute()
-    data = data.real
+    # 2. FFT Operations using numpy
+    data_fft = np.fft.fft(data, axis=1)
+    data_fft *= filt_vec[np.newaxis, :]
+    data = np.fft.ifft(data_fft, axis=1).real
     t_fft = time.time()
     print(f"FFT operations took {t_fft - t_fft_start:.2f} seconds")
 
@@ -212,22 +207,22 @@ def detect_glitches_vectorized(
 
     print("\nCalculating thresholds...")
     t_thresh_start = time.time()
-    # 4. Vectorized Thresholding with SciPy
+    # 3. Vectorized Thresholding with SciPy
     iqr = stats.iqr(data, axis=1, scale='normal')  # Proper IQR calculation
-    thresh = 0.741 * (iqr * n_sig)[:, np.newaxis]
+    thresh = (iqr * n_sig)[:, np.newaxis]
     cut_mask = np.abs(data) > thresh
     t_thresh = time.time()
     print(f"Thresholding took {t_thresh - t_thresh_start:.2f} seconds")
 
     print("\nProcessing masks...")
     t_mask_start = time.time()
-    # 5. Numba-accelerated mask processing
+    # 4. Numba-accelerated mask processing
     final_masks = process_masks_batched(cut_mask.astype(bool), min_separation, max_glitch, n_samp)
     t_mask = time.time()
     print(f"Mask processing took {t_mask - t_mask_start:.2f} seconds")
 
-    # Convert to CutsVector with max_glitch check 
-    return [CutsVector.new_always_cut(n_samp) if m.sum() > max_glitch*2 
+    # Convert to CutsVector with max_glitch check
+    return [CutsVector.new_always_cut(n_samp) if m.sum() > max_glitch*2
             else CutsVector.from_mask(m) for m in final_masks]
 
 
