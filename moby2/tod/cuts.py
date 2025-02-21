@@ -140,8 +140,7 @@ def get_glitch_cuts(
         filt_vec=filt_vec,
         n_sig=glitch_params.n_sig,
         max_glitch=glitch_params.max_glitch,
-        min_separation=glitch_params.min_separation,
-        threads=threads
+        min_separation=glitch_params.min_separation
     )
     
     print("\nCreating cuts object...")
