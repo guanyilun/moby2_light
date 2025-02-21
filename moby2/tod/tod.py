@@ -26,7 +26,7 @@ class TOD:
         data_z = np.load(filename, allow_pickle=True)
         data = data_z['arr_0'].item()
         return cls(data['ctime'], data['data'], np.arange(data['data'].shape[0]), len(data['ctime']), TODInfo(data['array_data']))
-    
+    @classmethod
     def from_npz_2(cls, filename):
         data_z = np.load(filename, allow_pickle=True)
         data = data_z['data'].item()
