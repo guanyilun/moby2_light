@@ -54,8 +54,9 @@ def tod_plot(snippet, colour = 'purple', alpha = 0.2,
 
     plt.ioff()
     plt.figure(figsize=(6, 4))
-    plt.plot(-data_t.T, color = colour, alpha = alpha)
+    plt.plot(data_t.T, color = colour, alpha = alpha)
     plt.xlabel('Time Sample', fontsize = 18)
+    plt.ylabel('Amplitude [$\\mu$K]', fontsize = 18)
 
     if display == 'show':
         plt.ion()
