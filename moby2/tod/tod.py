@@ -22,15 +22,27 @@ class TOD:
     sample_offset: int = 0
 
     @classmethod
-    def from_npz(cls, filename):
+    def from_npz_old(cls, filename):
         data_z = np.load(filename, allow_pickle=True)
         data = data_z['arr_0'].item()
         return cls(data['ctime'], data['data'], np.arange(data['data'].shape[0]), len(data['ctime']), TODInfo(data['array_data']))
     @classmethod
-    def from_npz_2(cls, filename):
+    def from_npz(cls, filename):
         data_z = np.load(filename, allow_pickle=True)
         data = data_z['data'].item()
-        return cls(data['ctime'], data['data'], np.arange(data['data'].shape[0]), len(data['ctime']), TODInfo(data['array_data']))
+        nsamps = 400*60*6
+        return cls(data['ctime'][:nsamps], data['data'][:, :nsamps], np.arange(data['data'].shape[0]), len(data['ctime'][:nsamps]), TODInfo(data['array_data']))
+
+    @classmethod
+    def from_npz_sims(cls, dir, todname, amp, halflife):
+        data_z = np.load('{}/{}.npz'.format(dir, todname), allow_pickle=True)
+        data = data_z['data'].item()
+        data_z_sim = np.load('{}/sim_{}_amp{}_h{}.npz'.format(dir, todname, amp, halflife), allow_pickle=True)
+        nsamps = 400*60*6
+        data_sim = data_z_sim['data'].item()
+        for d in range(len(data_sim['det_uid'])):
+            data['data'][data_sim['det_uid'][d], :nsamps] = data_sim['data'][d, :nsamps]
+        return cls(data['ctime'][:nsamps], data['data'][:, :nsamps], np.arange(data['data'].shape[0]), len(data['ctime'][:nsamps]), TODInfo(data['array_data']))
 
 
 def detrend_tod(tod=None, dets=None, data=None):
