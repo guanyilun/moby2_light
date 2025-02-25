@@ -33,10 +33,14 @@ class TOD:
         return cls(data['ctime'], data['data'], np.arange(data['data'].shape[0]), len(data['ctime']), TODInfo(data['array_data']))
 
     @classmethod
-    def from_npz_sims(cls, filename):
-        data_z = np.load(filename, allow_pickle=True)
+    def from_npz_sims(cls, dir, todname):
+        data_z = np.load('{}/{}.npz'.format(dir, todname), allow_pickle=True)
         data = data_z['data'].item()
-        return cls(data['ctime'], data['data'], data['det_uid'], len(data['ctime']), TODInfo(data['array_data']))
+        data_z_sim = np.load('{}/sim_{}.npz'.format(dir, todname), allow_pickle=True)
+        data_sim = data_z_sim['data'].item()
+        for d in range(len(data_sim['det_uid'])):
+            data['data'][data_sim['det_uid'][d], :] = data_sim['data'][d, :]
+        return cls(data['ctime'], data['data'], np.arange(data['data'].shape[0]), len(data['ctime']), TODInfo(data['array_data']))
 
 
 def detrend_tod(tod=None, dets=None, data=None):
