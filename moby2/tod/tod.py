@@ -34,10 +34,10 @@ class TOD:
         return cls(data['ctime'][:nsamps], data['data'][:, :nsamps], np.arange(data['data'].shape[0]), len(data['ctime'][:, :nsamps]), TODInfo(data['array_data']))
 
     @classmethod
-    def from_npz_sims(cls, dir, todname):
+    def from_npz_sims(cls, dir, todname, amp, halflife):
         data_z = np.load('{}/{}.npz'.format(dir, todname), allow_pickle=True)
         data = data_z['data'].item()
-        data_z_sim = np.load('{}/sim_{}.npz'.format(dir, todname), allow_pickle=True)
+        data_z_sim = np.load('{}/sim_{}_amp{}_h{}.npz'.format(dir, todname, amp, halflife), allow_pickle=True)
         nsamps = 400*60*6
         data_sim = data_z_sim['data'].item()
         for d in range(len(data_sim['det_uid'])):
