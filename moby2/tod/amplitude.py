@@ -6,14 +6,6 @@ import random
 from scipy.interpolate import splrep, BSpline
 import scipy as sp
 
-import moby2
-from moby2.scripting import products
-from moby2.tod import cuts
-
-import cutslib as cl
-import cutslib.glitch as gl
-from cutslib.visual import array_plots, get_position, tod3D
-
 import pandas as pd
 
 from scipy.optimize import curve_fit
