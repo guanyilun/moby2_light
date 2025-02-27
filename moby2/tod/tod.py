@@ -34,6 +34,13 @@ class TOD:
         return cls(data['ctime'][:nsamps], data['data'][:, :nsamps], np.arange(data['data'].shape[0]), len(data['ctime'][:nsamps]), TODInfo(data['array_data']))
 
     @classmethod
+    def from_npz_forcutsdemo(cls, dir, todname):
+        data_z = np.load('{}/nocal_{}.npz'.format(dir, todname), allow_pickle=True)
+        data = data_z['data'].item()
+        nsamps = 400*60*6
+        return cls(data['ctime'][:nsamps], data['data'][:, :nsamps], np.arange(data['data'].shape[0]), len(data['ctime'][:nsamps]), TODInfo(data['array_data']))
+
+    @classmethod
     def from_npz_sims(cls, dir, todname, amp, halflife):
         data_z = np.load('{}/{}.npz'.format(dir, todname), allow_pickle=True)
         data = data_z['data'].item()
