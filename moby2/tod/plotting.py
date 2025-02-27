@@ -1,8 +1,9 @@
 from matplotlib import pyplot as plt
+import numpy as np
 
 
 def array_plot(snippet, colour_affected_det = 'red', colour_other_det = '#9900ff',
-               display = 'show', save_name = 'newfig.png'):
+               display = 'show', save_name = 'newfig.png', sim = False, tod_sim = None):
   
     '''
     Plots the detector array indicating the affected detectors from the glitch.
@@ -10,7 +11,8 @@ def array_plot(snippet, colour_affected_det = 'red', colour_other_det = '#9900ff
     Input: snippet: snippet of glitch computed with moby2.tod.glitch.affected_snippets_from_cv,
     colour_affected_det: colour to make the affected detectors, colour_other_det: colour to make
     the other detectors, display: either 'show' or 'save' depending on if you would like to only
-    see the plot or also save it, save_name: name including path to save the plot.
+    see the plot or also save it, save_name: name including path to save the plot, sim: Is this 
+    a simulation? True or False, tod_sim: the TOD of the simulation loaded with from_npz_sims.
     Output: the focal plane plot
     '''
 
@@ -19,8 +21,12 @@ def array_plot(snippet, colour_affected_det = 'red', colour_other_det = '#9900ff
     array_y = snippet.info.array_data['sky_y']
 
     #get the positions for detectors affected by the glitch
-    x = array_x[snippet.det_uid]
-    y = array_y[snippet.det_uid]
+    if sim:
+      x = array_x[np.asarray(tod_sim.det_uid_original)[snippet.det_uid]]
+      y = array_y[np.asarray(tod_sim.det_uid_original)[snippet.det_uid]]
+    else:
+      x = array_x[snippet.det_uid]
+      y = array_y[snippet.det_uid]
 
     plt.ioff()
     plt.figure(figsize=(6, 6))

@@ -41,7 +41,7 @@ class TOD:
         return cls(data['ctime'][:nsamps], data['data'][:, :nsamps], np.arange(data['data'].shape[0]), len(data['ctime'][:nsamps]), TODInfo(data['array_data']))
 
     @classmethod
-    def from_npz_sims(cls, dir, todname, amp, halflife):
+    def from_npz_sims_old(cls, dir, todname, amp, halflife):
         data_z = np.load('{}/{}.npz'.format(dir, todname), allow_pickle=True)
         data = data_z['data'].item()
         data_z_sim = np.load('{}/sim_{}_amp{}_h{}.npz'.format(dir, todname, amp, halflife), allow_pickle=True)
@@ -51,6 +51,7 @@ class TOD:
             data['data'][data_sim['det_uid'][d], :nsamps] = data_sim['data'][d, :nsamps]
         return cls(data['ctime'][:nsamps], data['data'][:, :nsamps], np.arange(data['data'].shape[0]), len(data['ctime'][:nsamps]), TODInfo(data['array_data']))
 
+    
     @classmethod
     def from_npz_sims_test(cls, dir, todname, amp, halflife):
         data_z = np.load('{}/{}.npz'.format(dir, todname), allow_pickle=True)
@@ -62,6 +63,23 @@ class TOD:
         sim_detID = np.load('{}/{}_amp{}_h{}_ctimes.npy'.format(dir, todname, amp, halflife), allow_pickle=True)
         return cls(sim_ctime[:nsamps], data_sim['data'][:, :nsamps], sim_detID, len(data['ctime'][:nsamps]), TODInfo(data['array_data']))
 
+@dataclass
+class TODSim:
+    ctime: np.ndarray
+    data: np.ndarray
+    det_uid: np.ndarray
+    det_uid_original: np.ndarray
+    nsamps: int
+    info: TODInfo
+    sample_offset: int = 0
+
+    @classmethod
+    def from_npz_sims(cls, dir, todname, amp, halflife):
+        data_z = np.load('{}/sim_{}_amp{}_h{}.npz'.format(dir, todname, amp, halflife), allow_pickle=True)
+        nsamps = 400*60*6
+        data = data_z['data'].item()
+
+        return cls(data['ctime'][:nsamps], data['data'][:, :nsamps], np.arange(data['data'].shape[0]), data['det_uid'], len(data['ctime'][:nsamps]), TODInfo(data['array_data']))
 
 def detrend_tod(tod=None, dets=None, data=None):
     """
