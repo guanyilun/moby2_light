@@ -12,9 +12,7 @@ from scipy.optimize import curve_fit
 
 from astropy.coordinates import SkyCoord
 
-
 def excise_peaks(snip_data, buff):
-	
 	new_snip = snip_data.copy()
    	for i in range(len(snip_data)):
         	det_vals = snip_data[i]
