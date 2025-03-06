@@ -1,3 +1,4 @@
+
 import numpy as np
 from matplotlib import pyplot as plt
 import matplotlib.cm as cm
@@ -87,7 +88,7 @@ def calibrate(vals):
     vals *= beam_cal
     return vals
 
-def get_all_amps(tod_name_sim, snippets, amp, halflife, dir):
+def get_all_amps(tod_name_sim, tod_sim, snippets, amp, halflife, dir):
     source_amps = []
     source_ctimes = []
     
