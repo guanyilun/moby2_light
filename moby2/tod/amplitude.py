@@ -43,7 +43,7 @@ def excise_peaks(snip_data, buff):
             continue
     return new_snip
 
-def amp_fit(det, amp, pos_ra, pos_dec, off):
+def amp_fit(dir, det, amp, pos_ra, pos_dec, off):
 
     #det: a Nx2 (ra,dec) array of detector position
     #pos_ra: ra position of the source 
@@ -56,7 +56,7 @@ def amp_fit(det, amp, pos_ra, pos_dec, off):
     
     r_flat = r_diff.flatten()
 
-    f = np.loadtxt('/home/eh9397/20230903_beams_s1v3/s19_pa5_f150_night_beam_profile_instant.txt')
+    f = np.loadtxt(dir+'/s19_pa5_f150_night_beam_profile_instant.txt')
     rad = f.T[0] #radius in degrees
     i = f.T[1]
     b = np.interp(r_flat, rad, i)
