@@ -94,7 +94,7 @@ def get_all_amps(snippets, amp, halflife, dir):
     
     for i in range(len(snippets)):
       snip_idx = i
-      snip = snippets_sim[snip_idx]
+      snip = snippets[snip_idx]
       slice_inds = snip.tslice
     
       excised = excise_peaks(snip.data, 15)
