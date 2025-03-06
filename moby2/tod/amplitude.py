@@ -88,7 +88,7 @@ def calibrate(vals):
   vals *= beam_cal
   return vals
 
-def get_all_amps(snippets):
+def get_all_amps(snippets, amp, halflife):
     source_amps = []
     source_ctimes = []
     
