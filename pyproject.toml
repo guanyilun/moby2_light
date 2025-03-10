@@ -8,7 +8,7 @@ version = "0.1.0"
 description = "ACT Data Analysis Software Package"
 requires-python = ">=3.7"
 dependencies = [
-    "numpy>=1.20.0",  # For numpy.typing
+    "numpy>=1.20.0, <2.0.0",  # For numpy.typing
     "numba",          # For performance optimization
 ]
 
