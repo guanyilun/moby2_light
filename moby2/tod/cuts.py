@@ -366,7 +366,7 @@ def iterate_dets(f):
 
 
 class TODCuts:
-    def __init__(self, ndets=None, nsamps=None, det_uid=None, sample_offset=None):
+    def __init__(self, ndets=None, nsamps=None, det_uid=None, sample_offset=0):
         if ndets is None:
             ndets = len(det_uid)
         if det_uid is None:
@@ -552,3 +552,192 @@ class TODCuts:
         if assign:
             obj.cuts = [CutsVector.new_always_cut(obj.nsamps) for _ in range(obj.ndets)]
         return obj
+
+
+def fill_one_cuts(data: np.ndarray, cuts: np.ndarray, noise: Optional[np.ndarray] = None, 
+                 fit_region: int = 10, extrapolate: int = 0) -> None:
+    """Fill cut regions in data array using linear fits from surrounding regions.
+    
+    Parameters:
+    -----------
+    data : np.ndarray
+        1D float32 array containing the data to be processed
+    cuts : np.ndarray
+        Array of cut regions with shape (n_cuts, 2) specifying [start, end) indices
+    noise : np.ndarray, optional
+        Optional 1D float32 array of noise values to add to cuts
+    fit_region : int
+        Number of samples to use for fitting on each side of cut
+    extrapolate : int
+        Whether to extrapolate when only one side has data (0=False, 1=True)
+    
+    Notes:
+    ------
+    This function modifies the data array in-place.
+    """
+    # Validate input
+    if len(cuts) == 0:
+        return
+
+    nsamps = len(data)
+    noise_i = 0
+
+    # Validate noise array if provided
+    if noise is not None and len(cuts) > 0:
+        total_cut_samples = sum(cut[1] - cut[0] for cut in cuts)
+        if len(noise) < total_cut_samples:
+            raise ValueError("Required more noise samples than were provided")
+
+    # Process each cut region
+    last_cut = 0
+    for i, (start, end) in enumerate(cuts):
+        # Skip if cut is beyond data length
+        if start >= nsamps:
+            break
+
+        # Define regions for fitting
+        left_edge = max(last_cut, start - fit_region)  # Don't overlap with previous cut
+        right_edge = min(nsamps, end + fit_region)     # Don't go beyond end of data
+
+        # Check for next cut region to avoid overlap
+        if i + 1 < len(cuts) and cuts[i+1, 0] < right_edge:
+            right_edge = cuts[i+1, 0]
+
+        # Get samples before and after the cut
+        left_region = np.arange(left_edge, start)
+        right_region = np.arange(end, right_edge)
+
+        # Determine fill method based on available data
+        has_left = len(left_region) > 0
+        has_right = len(right_region) > 0
+        cut_region = np.arange(start, end)
+        
+        if len(cut_region) == 0:
+            continue  # Empty cut region, nothing to do
+
+        # Calculate fill values using linear fit when possible
+        if has_left and has_right:
+            # We have data on both sides - do linear fit or interpolation
+            x_values = np.concatenate([left_region, right_region])
+            y_values = np.concatenate([data[left_region], data[right_region]])
+            
+            # Simple linear fit
+            if len(x_values) > 1:
+                slope, intercept = np.polyfit(x_values, y_values, 1)
+                fill_values = slope * cut_region + intercept
+            else:
+                fill_values = np.full_like(cut_region, y_values[0], dtype=np.float32)
+        
+        elif (has_left and len(left_region) >= 2 and extrapolate) or (has_right and len(right_region) >= 2 and extrapolate):
+            # Only one side has data but we can extrapolate
+            x_fit = left_region if has_left else right_region
+            y_fit = data[x_fit]
+            
+            # Linear extrapolation
+            slope, intercept = np.polyfit(x_fit, y_fit, 1)
+            fill_values = slope * cut_region + intercept
+
+        else:
+            # Use constant fill from nearest edge
+            if has_left:
+                fill_values = np.full_like(cut_region, data[start-1], dtype=np.float32)
+            elif has_right:
+                fill_values = np.full_like(cut_region, data[end], dtype=np.float32)
+            else:
+                fill_values = np.zeros_like(cut_region, dtype=np.float32)
+
+        # Add noise if provided
+        if noise is not None:
+            n_needed = len(cut_region)
+            # Calculate noise scaling based on residuals around fit
+            noise_scale = 1.0
+            if 'slope' in locals() and (has_left or has_right):
+                residuals = []
+                if has_left:
+                    residuals.append(data[left_region] - (slope * left_region + intercept))
+                if has_right:
+                    residuals.append(data[right_region] - (slope * right_region + intercept))
+                
+                if residuals:
+                    residuals = np.concatenate(residuals)
+                    noise_scale = np.std(residuals)
+                        
+            # Apply scaled noise
+            fill_values += noise_scale * noise[noise_i:noise_i + n_needed]
+            noise_i += n_needed
+
+        # Ensure continuity at boundaries for smooth transitions
+        if has_left:
+            fill_values[0] = data[start-1]
+        if has_right and len(fill_values) > 0:
+            fill_values[-1] = data[end]
+            
+        # Update the data array in-place
+        data[cut_region] = fill_values
+        
+        # Track last cut end for next iteration
+        last_cut = end
+
+def fill_cuts(tod=None, cuts=None, data=None,
+              neighborhood=40, do_all=False, filterScaling=1.0,
+              extrapolate=False, sample_index=0, no_noise=False):
+    """Replace certain samples of a TOD with a straight line plus some
+    white noise.  The samples to fill are specified by a TODCuts
+    object, which is passed through the cuts= argument, or obtained
+    from tod.cuts.  The data array to fill is passed through the
+    data= argument, or else tod.data is used.
+    The cut samples will be replaced with a straight line and white
+    noise, with the linear fit and RMS taken from a "neighborhood" of
+    samples on either side of the cut region.  The white noise can be
+    modulated by the filterScaling argument, or turned off entirely by
+    passing no_noise=True.
+    The extrapolate argument affects how cut regions at the beginning
+    or end of a timestream are handled; False means that the linear
+    fill will have its slope forced to zero.
+    """
+    # Just passing in tod is enough.
+    if cuts is None and tod is not None:
+        cuts = tod.cuts
+    if data is None and tod is not None:
+        data = tod.data
+        si = tod.info.sample_index
+    else:
+        si = sample_index
+    
+    nsamps = data.shape[-1]
+        
+    # Check alignment between cuts and data.
+    if si != cuts.sample_offset:
+        print(f"TOD was loaded from sample {si} but cuts have sample offset {cuts.sample_offset}.")
+        print(f"The first {abs(si - cuts.sample_offset)} samples will be handled differently.")
+    else:
+        assert (data.shape[-1] == cuts.nsamps) or (data.shape[-1] == cuts.nsamps+1)
+    
+    # Validate detector count matches
+    assert(data.shape[0] == len(cuts.det_uid))
+    if tod is not None:
+        assert(np.all(tod.det_uid == cuts.det_uid))
+    
+    det_list = range(data.shape[0]) if do_all else cuts.get_uncut()
+    
+    for deti in det_list:
+        mask = cuts.cuts[deti].get_mask()
+        offset = cuts.sample_offset - si
+        total_mask = np.ones(nsamps, dtype=bool)
+        total_mask[max(0, offset):min(nsamps, cuts.nsamps+offset)] = \
+            mask[max(0, -offset):min(nsamps-offset, cuts.nsamps)]
+        cuts_list = CutsVector.from_mask(total_mask)
+        
+        # Convert to array of [start, end] pairs
+        cuts_array = np.array(cuts_list, dtype=np.int32).reshape(-1, 2)
+        
+        if no_noise: 
+            noise = None
+        else:
+            # Calculate total number of samples to be cut
+            n_cut = sum([end - start for start, end in cuts_array])
+            # Generate noise samples
+            noise = np.random.normal(size=n_cut) * filterScaling
+        
+        # Fill cuts for this detector
+        fill_one_cuts(data[deti], cuts_array, noise, neighborhood, int(extrapolate))
