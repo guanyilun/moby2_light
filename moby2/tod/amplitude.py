@@ -99,6 +99,8 @@ def get_all_amps(tod_name_sim, tod_sim, snippets, amp, halflife, dir):
         
         excised = excise_peaks(snip.data, 15)
         snip_data = snip.data - excised
+        d_final = snip_data.flatten()
+        d_final = calibrate(d_final)
         
         pos_csv = 'pos_{}_amp{}_h{}_tstart_{}_tend_{}_plus1.csv'.format(tod_name_sim, amp, halflife, slice_inds.start, slice_inds.stop)
         pos_df = pd.read_csv('{}/{}'.format(dir, pos_csv))
@@ -149,7 +151,7 @@ def get_all_amps(tod_name_sim, tod_sim, snippets, amp, halflife, dir):
         guess_off = np.mean(snip_data[:100])
         
         det_final = det.reshape(-1, det.shape[-1])
-        d_final = snip_data.flatten()
+
         
         popt, pcov = curve_fit(amp_fit, det_final, d_final, p0=[guess_amp, guess_ra, guess_dec, guess_off], sigma=np.ones(len(d_final))*100, absolute_sigma=True)
         
