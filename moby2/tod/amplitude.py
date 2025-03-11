@@ -162,3 +162,33 @@ def get_all_amps(tod_name_sim, tod_sim, snippets, amp, halflife, dir):
         source_amps.append(fit_amp)
         source_ctimes.append(avg_time)
     return source_amps, source_ctimes
+
+
+def flare (time, amp, h):
+    k = np.log(2)/h
+
+    val = amp*np.exp(-k*(time))
+    return val
+
+# CALIBRATION
+def dplanck(f, T):
+    a=2
+    """The derivative of the planck spectrum with respect to temperature, evaluated
+    at frequencies f and temperature T, in units of Jy/sr/K."""
+    c = 299792458.0
+    h = 6.62606957e-34
+    k = 1.3806488e-23
+    x = h*f/(k*T)
+    dIdT  = 2*x**4 * k**3*T**2/(h**2*c**2) / (4*np.sinh(x/2)**2) * 1e26
+    return dIdT
+
+def calibrate(vals):
+    #convert to mJy/sr
+    if type(vals) != np.ndarray:
+        vals = np.array(vals)
+    vals *= dplanck(149e9, 2.72548)/1e3
+    nsr = 211.47
+    beam_cal = nsr * 1e-9
+
+    vals *= beam_cal
+    return vals
