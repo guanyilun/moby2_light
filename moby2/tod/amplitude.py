@@ -55,7 +55,7 @@ def amp_fit(det, amp, pos_ra, pos_dec, off):
     r_diff = c1.separation(c2).deg
     
     r_flat = r_diff.flatten()
-    dir = '/content/drive/MyDrive/ACT_colab_notebook'
+    dir = '.'
     f = np.loadtxt(dir+'/s19_pa5_f150_night_beam_profile_instant.txt')
     rad = f.T[0] #radius in degrees
     i = f.T[1]
