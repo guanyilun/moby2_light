@@ -102,7 +102,7 @@ def get_all_amps(tod_name_sim, tod_sim, snippets, amp, halflife, dir):
         d_final = snip_data.flatten()
         d_final = calibrate(d_final)
         
-        pos_csv = 'pos_{}_amp{}_h{}_tstart_{}_tend_{}_plus1.csv'.format(tod_name_sim, amp, halflife, slice_inds.start, slice_inds.stop)
+        pos_csv = 'pos_{}_amp{}_h{}_tstart_{}_tend_{}.csv'.format(tod_name_sim, amp, halflife, slice_inds.start, slice_inds.stop)
         pos_df = pd.read_csv('{}/{}'.format(dir, pos_csv))
         
         pos_df.ra *= 180/np.pi
