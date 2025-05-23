@@ -23,17 +23,29 @@ class TOD:
     sample_offset: int = 0
 
     @classmethod
-    def from_npz(cls, dir, todname):
-        data_z = np.load('{}/{}.npz'.format(dir, todname), allow_pickle=True)
+    def from_path(cls, path, truncate=400*60*6):
+        """slightly more general, only this function will be maintained.
+        
+        It assumes the npz contains the following fields: 
+        ctime, data, array_data
+        """
+        data_z = np.load(path, allow_pickle=True)
         data = data_z['data'].item()
-        nsamps = 400*60*6
+        nsamps = truncate
         return cls(data['ctime'][:nsamps], data['data'][:, :nsamps], np.arange(data['data'].shape[0]), np.arange(data['data'].shape[0]), len(data['ctime'][:nsamps]), TODInfo(data['array_data']))
 
     @classmethod
-    def from_npz_forcutsdemo(cls, dir, todname):
+    def from_npz(cls, dir, todname, truncate=400*60*6):
+        data_z = np.load('{}/{}.npz'.format(dir, todname), allow_pickle=True)
+        data = data_z['data'].item()
+        nsamps = truncate
+        return cls(data['ctime'][:nsamps], data['data'][:, :nsamps], np.arange(data['data'].shape[0]), np.arange(data['data'].shape[0]), len(data['ctime'][:nsamps]), TODInfo(data['array_data']))
+
+    @classmethod
+    def from_npz_forcutsdemo(cls, dir, todname, truncate=400*60*6):
         data_z = np.load('{}/nocal_{}.npz'.format(dir, todname), allow_pickle=True)
         data = data_z['data'].item()
-        nsamps = 400*60*6
+        nsamps = truncate
         return cls(data['ctime'][:nsamps], data['data'][:, :nsamps], np.arange(data['data'].shape[0]), np.arange(data['data'].shape[0]), len(data['ctime'][:nsamps]), TODInfo(data['array_data']))
 
     @classmethod
